@@ -322,12 +322,18 @@
 
   // ---------- Actions ----------
 
+  // Chance that an eligible roll clears every standing pin (a strike on a fresh
+  // rack, or a spare on a completing roll). The other pin counts split the rest.
+  const STRIKE_OR_SPARE_RATE = 0.35;
+
   function startBowl() {
     const active = currentFrameIndex();
     if (active === -1 || phase !== "ready") return;
     const remaining = pinsRemaining(active);
 
-    const actual = Math.floor(Math.random() * (remaining + 1)); // 0..remaining inclusive
+    const actual = Math.random() < STRIKE_OR_SPARE_RATE
+      ? remaining                                  // strike (remaining===10) or spare
+      : Math.floor(Math.random() * remaining);      // uniform 0..remaining-1
     const pool = Array.from({ length: remaining }, (_, i) => i);
     for (let i = pool.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
