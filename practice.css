@@ -80,12 +80,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  cursor: pointer;
-  transition: transform 0.35s ease, opacity 0.35s ease;
+  transition: transform 0.45s cubic-bezier(.4,0,.2,1), opacity 0.4s ease;
   transform-origin: bottom center;
-  background: none;
-  border: none;
-  padding: 0;
 }
 
 .pin-head {
@@ -96,7 +92,7 @@
   border: 2px solid var(--text);
   margin-bottom: -2px;
   z-index: 1;
-  transition: background 0.2s ease, border-color 0.2s ease;
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 
 .pin-body {
@@ -105,19 +101,13 @@
   border-radius: 50% 50% 42% 42% / 60% 60% 34% 34%;
   background: var(--surface);
   border: 2px solid var(--text);
-  transition: background 0.2s ease, border-color 0.2s ease;
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 
-.pin:disabled { cursor: default; }
-
-.pin.selected .pin-body { background: #f4c542; border-color: #b8860b; }
-.pin.selected .pin-head { background: #f4c542; border-color: #b8860b; }
-.pin.selected { transform: scale(1.08); }
-
+/* pins already down from an earlier roll this frame */
 .pin.fallen {
   transform: rotate(94deg) translateY(6px);
   opacity: 0.35;
-  cursor: default;
 }
 
 .pin.fallen .pin-body,
@@ -126,68 +116,103 @@
   border-color: var(--pending);
 }
 
-.pin:hover:not(.fallen):not(.selected) .pin-body { border-color: var(--accent); }
-.pin:hover:not(.fallen):not(.selected) .pin-head { border-color: var(--accent); }
-
-.quick-actions {
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-  margin-top: 22px;
-  flex-wrap: wrap;
+/* pins knocked down by the roll just bowled — distinct color while you count */
+.pin.just-fell {
+  transform: rotate(-98deg) translateY(6px) translateX(-2px);
+  opacity: 0.9;
 }
 
-.quick-btn {
-  height: 42px;
-  padding: 0 18px;
-  border-radius: 8px;
-  font-weight: 700;
-  font-size: 0.9rem;
-  cursor: pointer;
-  background: var(--surface);
-  transition: transform 0.06s ease, opacity 0.15s ease;
+.pin.just-fell .pin-body,
+.pin.just-fell .pin-head {
+  background: var(--strike);
+  border-color: var(--strike);
 }
 
-.quick-btn:active:not(:disabled) { transform: scale(0.96); }
-
-.quick-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-
-.quick-btn.strike { border: 1.5px solid var(--strike); color: var(--strike); }
-.quick-btn.spare { border: 1.5px solid var(--spare); color: var(--spare); }
-.quick-btn.gutter { border: 1.5px solid var(--border); color: var(--text-muted); }
-
-.bowl-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  margin-top: 22px;
-  padding-top: 18px;
+/* --- Action panel: Bowl button + guess pad --- */
+.action-panel {
+  margin-top: 24px;
+  padding-top: 20px;
   border-top: 1px solid var(--border);
-  flex-wrap: wrap;
+  text-align: center;
+  min-height: 116px;
 }
 
-.selected-count {
-  color: var(--text-muted);
-  font-size: 0.92rem;
-}
-
-.bowl-btn {
-  height: 48px;
-  padding: 0 28px;
-  border-radius: 10px;
+.bowl-btn-main {
+  height: 56px;
+  padding: 0 40px;
+  border-radius: 12px;
   border: none;
   background: var(--accent);
   color: #fff;
   font-weight: 800;
-  font-size: 1rem;
+  font-size: 1.1rem;
   cursor: pointer;
   transition: transform 0.08s ease, opacity 0.15s ease;
 }
 
-.bowl-btn:hover { opacity: 0.92; }
-.bowl-btn:active { transform: scale(0.96); }
-.bowl-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.bowl-btn-main:hover:not(:disabled) { opacity: 0.92; }
+.bowl-btn-main:active:not(:disabled) { transform: scale(0.96); }
+.bowl-btn-main:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.bowl-hint {
+  margin-top: 10px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.guess-prompt {
+  font-weight: 700;
+  margin-bottom: 14px;
+  font-size: 1.02rem;
+}
+
+.guess-pad {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.guess-btn {
+  min-width: 46px;
+  height: 46px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 0.06s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.guess-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.guess-btn:active:not(:disabled) { transform: scale(0.94); }
+.guess-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.guess-btn.wrong-flash {
+  animation: shakeWrong 0.4s ease;
+  border-color: var(--strike);
+  color: var(--strike);
+  background: color-mix(in srgb, var(--strike) 12%, var(--surface));
+}
+
+@keyframes shakeWrong {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+.guess-feedback {
+  min-height: 1.4em;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.guess-feedback.correct { color: var(--spare); }
+.guess-feedback.wrong { color: var(--strike); }
 
 .lane-section .controls { justify-content: center; margin-top: 22px; }
 .lane-section .legend { justify-content: center; }

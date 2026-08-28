@@ -3,7 +3,12 @@
 
   const NUM_FRAMES = 10;
   let frames = makeFreshFrames();
-  let selection = new Set();
+
+  // Bowl/guess state machine: "ready" (waiting to bowl) or "guessing" (pins fell, waiting for count)
+  let phase = "ready";
+  let pendingActual = null;       // the true number of pins knocked down this roll
+  let pendingFallenIdx = new Set(); // which standing-pin slots (0-based, among the ones standing pre-roll) fell
+  let feedback = null;            // { type: "correct" | "wrong", guess: number } | null
 
   function makeFreshFrames() {
     return Array.from({ length: NUM_FRAMES }, () => ({ rolls: [] }));
@@ -110,6 +115,51 @@
     return "";
   }
 
+  // ---------- Pin rack DOM (built once, updated in place so CSS transitions animate) ----------
+
+  const ROW_SIZES = [4, 3, 2, 1]; // back row to front pin
+  let pinEls = []; // 10 refs, in slot order
+
+  function buildPinRack() {
+    const rack = document.getElementById("pinRack");
+    rack.innerHTML = "";
+    pinEls = [];
+    let idx = 0;
+    for (const size of ROW_SIZES) {
+      const row = document.createElement("div");
+      row.className = "pin-rack-row";
+      for (let j = 0; j < size; j++) {
+        const pin = document.createElement("div");
+        pin.className = "pin";
+        const head = document.createElement("div");
+        head.className = "pin-head";
+        const body = document.createElement("div");
+        body.className = "pin-body";
+        pin.appendChild(head);
+        pin.appendChild(body);
+        row.appendChild(pin);
+        pinEls.push(pin);
+        idx++;
+      }
+      rack.appendChild(row);
+    }
+  }
+
+  function renderPinRack() {
+    const active = currentFrameIndex();
+    const remaining = active === -1 ? 0 : pinsRemaining(active);
+    for (let i = 0; i < 10; i++) {
+      const el = pinEls[i];
+      if (active === -1 || i >= remaining) {
+        el.className = "pin fallen";
+      } else if (phase === "guessing" && pendingFallenIdx.has(i)) {
+        el.className = "pin just-fell";
+      } else {
+        el.className = "pin";
+      }
+    }
+  }
+
   // ---------- Rendering ----------
 
   function render() {
@@ -117,9 +167,9 @@
     renderGameTotal();
     renderStatus();
     renderPinRack();
-    renderQuickActions();
-    renderBowlRow();
+    renderActionPanel();
     renderResultBanner();
+    updateUndoLabel();
   }
 
   function renderScoresheet() {
@@ -169,81 +219,60 @@
     }
   }
 
-  function renderPinRack() {
-    const rack = document.getElementById("pinRack");
-    rack.innerHTML = "";
-    const active = currentFrameIndex();
-    const remaining = active === -1 ? 0 : pinsRemaining(active);
-    const rowSizes = [4, 3, 2, 1]; // back row to front pin
-    let i = 0;
-
-    for (const size of rowSizes) {
-      const row = document.createElement("div");
-      row.className = "pin-rack-row";
-      for (let j = 0; j < size; j++) {
-        const idx = i++;
-        const isFallen = active === -1 || idx >= remaining;
-        const isSelected = !isFallen && selection.has(idx);
-
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "pin" + (isFallen ? " fallen" : "") + (isSelected ? " selected" : "");
-        btn.disabled = isFallen;
-        btn.setAttribute("aria-label", isFallen ? "Pin already down" : isSelected ? "Pin selected, click to deselect" : "Standing pin, click to knock down");
-
-        const head = document.createElement("div");
-        head.className = "pin-head";
-        const body = document.createElement("div");
-        body.className = "pin-body";
-        btn.appendChild(head);
-        btn.appendChild(body);
-
-        if (!isFallen) {
-          btn.addEventListener("click", () => togglePin(idx));
-        }
-        row.appendChild(btn);
-      }
-      rack.appendChild(row);
-    }
-  }
-
-  function renderQuickActions() {
-    const active = currentFrameIndex();
-    const remaining = active === -1 ? null : pinsRemaining(active);
-    const strikeBtn = document.getElementById("strikeBtn");
-    const spareBtn = document.getElementById("spareBtn");
-    const gutterBtn = document.getElementById("gutterBtn");
-
-    const over = active === -1;
-    strikeBtn.disabled = over || remaining !== 10;
-    spareBtn.disabled = over || remaining === null || remaining === 10;
-    gutterBtn.disabled = over;
-
-    strikeBtn.onclick = () => addRoll(10);
-    spareBtn.onclick = () => addRoll(remaining);
-    gutterBtn.onclick = () => addRoll(0);
-  }
-
-  function renderBowlRow() {
-    const countEl = document.getElementById("selectedCount");
-    const bowlBtn = document.getElementById("bowlBtn");
-    const bowlValue = document.getElementById("bowlValue");
+  function renderActionPanel() {
+    const panel = document.getElementById("actionPanel");
+    panel.innerHTML = "";
     const active = currentFrameIndex();
 
     if (active === -1) {
-      countEl.textContent = "Game complete — reset to bowl again.";
-      bowlBtn.disabled = true;
-      bowlValue.textContent = "";
+      const p = document.createElement("p");
+      p.className = "bowl-hint";
+      p.textContent = "Game complete — reset to bowl again.";
+      panel.appendChild(p);
       return;
     }
 
-    const n = selection.size;
-    countEl.textContent = n === 0
-      ? "Tap standing pins, or Bowl now for a gutter ball."
-      : `${n} pin${n === 1 ? "" : "s"} selected.`;
-    bowlValue.textContent = ` (${n})`;
-    bowlBtn.disabled = false;
-    bowlBtn.onclick = () => addRoll(n);
+    if (phase === "ready") {
+      const btn = document.createElement("button");
+      btn.className = "bowl-btn-main";
+      btn.textContent = "Bowl!";
+      btn.addEventListener("click", startBowl);
+      panel.appendChild(btn);
+
+      const hint = document.createElement("p");
+      hint.className = "bowl-hint";
+      const remaining = pinsRemaining(active);
+      hint.textContent = `${remaining} pin${remaining === 1 ? "" : "s"} standing.`;
+      panel.appendChild(hint);
+      return;
+    }
+
+    // phase === "guessing"
+    const remaining = pinsRemaining(active);
+
+    const prompt = document.createElement("p");
+    prompt.className = "guess-prompt";
+    prompt.textContent = "How many pins fell?";
+    panel.appendChild(prompt);
+
+    const pad = document.createElement("div");
+    pad.className = "guess-pad";
+    for (let v = 0; v <= remaining; v++) {
+      const b = document.createElement("button");
+      b.className = "guess-btn";
+      b.textContent = v === 10 ? "X" : String(v);
+      b.setAttribute("aria-label", v === 10 ? "Guess: strike, 10 pins" : `Guess: ${v} pins`);
+      b.addEventListener("click", () => submitGuess(v, b));
+      pad.appendChild(b);
+    }
+    panel.appendChild(pad);
+
+    const fb = document.createElement("p");
+    fb.className = "guess-feedback" + (feedback ? " " + feedback.type : "");
+    fb.textContent = feedback && feedback.type === "wrong"
+      ? `Not quite — ${feedback.guess} isn't right. Recount and try again.`
+      : "Count the pins that just fell, then tap the number.";
+    panel.appendChild(fb);
   }
 
   function renderStatus() {
@@ -254,8 +283,7 @@
       return;
     }
     const rollNum = frames[active].rolls.length + 1;
-    const remaining = pinsRemaining(active);
-    el.innerHTML = `Frame <strong>${active + 1}</strong>, roll <strong>${rollNum}</strong> — ${remaining} pin${remaining === 1 ? "" : "s"} standing`;
+    el.innerHTML = `Frame <strong>${active + 1}</strong>, roll <strong>${rollNum}</strong>`;
   }
 
   function renderGameTotal() {
@@ -294,27 +322,49 @@
 
   // ---------- Actions ----------
 
-  function togglePin(idx) {
-    if (selection.has(idx)) selection.delete(idx);
-    else selection.add(idx);
-    renderPinRack();
-    renderBowlRow();
-  }
-
-  function addRoll(v) {
+  function startBowl() {
     const active = currentFrameIndex();
-    if (active === -1) return;
+    if (active === -1 || phase !== "ready") return;
     const remaining = pinsRemaining(active);
-    if (remaining === null || v > remaining || v < 0) return;
 
-    const rollPositionInFrame = frames[active].rolls.length;
-    frames[active].rolls.push(v);
-    selection = new Set();
+    const actual = Math.floor(Math.random() * (remaining + 1)); // 0..remaining inclusive
+    const pool = Array.from({ length: remaining }, (_, i) => i);
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    pendingFallenIdx = new Set(pool.slice(0, actual));
+    pendingActual = actual;
+    feedback = null;
+    phase = "guessing";
     render();
-    celebrate(active, rollPositionInFrame);
   }
 
-  function celebrate(frameIdx, rollIdx) {
+  function submitGuess(v, btnEl) {
+    if (phase !== "guessing") return;
+    if (v === pendingActual) {
+      const active = currentFrameIndex();
+      const rollPositionInFrame = frames[active].rolls.length;
+      frames[active].rolls.push(pendingActual);
+      const committedValue = pendingActual;
+      phase = "ready";
+      pendingActual = null;
+      pendingFallenIdx = new Set();
+      feedback = null;
+      render();
+      celebrate(active, rollPositionInFrame, committedValue);
+    } else {
+      feedback = { type: "wrong", guess: v };
+      render();
+      const freshBtn = [...document.querySelectorAll(".guess-btn")].find(b => b.textContent === (v === 10 ? "X" : String(v)));
+      if (freshBtn) {
+        freshBtn.classList.add("wrong-flash");
+        setTimeout(() => freshBtn.classList.remove("wrong-flash"), 400);
+      }
+    }
+  }
+
+  function celebrate(frameIdx, rollIdx, committedValue) {
     const rolls = frames[frameIdx].rolls;
     const isLast = frameIdx === NUM_FRAMES - 1;
     const sym = isLast ? symbolFrame10(rolls, rollIdx) : symbolFrame19(rolls, rollIdx);
@@ -327,10 +377,17 @@
   }
 
   function undo() {
+    if (phase === "guessing") {
+      phase = "ready";
+      pendingActual = null;
+      pendingFallenIdx = new Set();
+      feedback = null;
+      render();
+      return;
+    }
     for (let i = NUM_FRAMES - 1; i >= 0; i--) {
       if (frames[i].rolls.length > 0) {
         frames[i].rolls.pop();
-        selection = new Set();
         render();
         return;
       }
@@ -339,12 +396,21 @@
 
   function resetGame() {
     frames = makeFreshFrames();
-    selection = new Set();
+    phase = "ready";
+    pendingActual = null;
+    pendingFallenIdx = new Set();
+    feedback = null;
     render();
+  }
+
+  function updateUndoLabel() {
+    const btn = document.getElementById("undoBtn");
+    btn.textContent = phase === "guessing" ? "↺ Cancel this roll" : "↺ Undo last roll";
   }
 
   document.getElementById("undoBtn").addEventListener("click", undo);
   document.getElementById("resetBtn").addEventListener("click", resetGame);
 
+  buildPinRack();
   render();
 })();
