@@ -316,7 +316,7 @@
 
     const prompt = document.createElement("p");
     prompt.className = "guess-prompt";
-    prompt.textContent = `Frame ${i + 1} is ready to score — how many points does it earn on its own (before adding it to the running total)?`;
+    prompt.textContent = `Frame ${i + 1} is ready to score — what's the new running total?`;
     panel.appendChild(prompt);
 
     const entry = document.createElement("div");
@@ -328,7 +328,7 @@
     input.className = "score-input";
     input.id = "scoreInput";
     input.min = "0";
-    input.max = "30";
+    input.max = "300";
     input.placeholder = "0";
     input.addEventListener("keydown", e => {
       if (e.key === "Enter") submitFrameScore();
@@ -346,8 +346,8 @@
     const fb = document.createElement("p");
     fb.className = "guess-feedback" + (scoreFeedback ? " " + scoreFeedback.type : "");
     fb.textContent = scoreFeedback && scoreFeedback.type === "wrong"
-      ? `Not quite — ${scoreFeedback.guess} isn't right. Check frame ${i + 1}'s rolls (and any bonus rolls) and try again.`
-      : "Add up the frame's rolls — remember strikes and spares borrow from what comes next.";
+      ? `Not quite — ${scoreFeedback.guess} isn't right. Check frame ${i + 1}'s rolls (and any bonus rolls), work out its points, and add that to the previous running total.`
+      : "Work out this frame's points — remember strikes and spares borrow from what comes next — then add it to the running total so far.";
     panel.appendChild(fb);
 
     input.focus();
@@ -465,7 +465,7 @@
     const raw = input.value.trim();
     if (raw === "") return;
     const guess = Number(raw);
-    const actual = computeFrameScore(scoringFrameIndex);
+    const actual = cumulativeThrough(scoringFrameIndex);
 
     if (guess === actual) {
       frameConfirmed[scoringFrameIndex] = true;
