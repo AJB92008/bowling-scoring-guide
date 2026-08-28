@@ -214,6 +214,73 @@
 .guess-feedback.correct { color: var(--spare); }
 .guess-feedback.wrong { color: var(--strike); }
 
+/* --- Frame-score entry (compute-it-yourself) --- */
+.score-entry {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.score-input {
+  width: 84px;
+  height: 48px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-weight: 700;
+  font-size: 1.1rem;
+  text-align: center;
+  -moz-appearance: textfield;
+}
+
+.score-input::-webkit-outer-spin-button,
+.score-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.score-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.score-input.wrong-flash {
+  animation: shakeWrong 0.4s ease;
+  border-color: var(--strike);
+}
+
+.score-submit-btn {
+  height: 48px;
+  padding: 0 24px;
+  border-radius: 8px;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: transform 0.08s ease, opacity 0.15s ease;
+}
+
+.score-submit-btn:hover { opacity: 0.92; }
+.score-submit-btn:active { transform: scale(0.96); }
+
+/* frame-total box actively waiting for the player's calculation */
+.frame-total.awaiting {
+  color: var(--accent);
+  font-weight: 800;
+  animation: awaitingPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes awaitingPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
 .lane-section .controls { justify-content: center; margin-top: 22px; }
 .lane-section .legend { justify-content: center; }
 

@@ -4,11 +4,18 @@
   const NUM_FRAMES = 10;
   let frames = makeFreshFrames();
 
-  // Bowl/guess state machine: "ready" (waiting to bowl) or "guessing" (pins fell, waiting for count)
+  // Bowl/guess/score state machine:
+  //   "ready"    — waiting for the player to bowl
+  //   "guessing" — pins fell, waiting for the player to count them
+  //   "scoring"  — a frame's score is now computable, waiting for the player to work it out
   let phase = "ready";
   let pendingActual = null;       // the true number of pins knocked down this roll
   let pendingFallenIdx = new Set(); // which standing-pin slots (0-based, among the ones standing pre-roll) fell
   let feedback = null;            // { type: "correct" | "wrong", guess: number } | null
+
+  let frameConfirmed = new Array(NUM_FRAMES).fill(false); // has the player correctly scored this frame?
+  let scoringFrameIndex = -1;     // which frame the player is currently being asked to score
+  let scoreFeedback = null;       // { type: "correct" | "wrong", guess: number } | null
 
   function makeFreshFrames() {
     return Array.from({ length: NUM_FRAMES }, () => ({ rolls: [] }));
@@ -78,6 +85,18 @@
 
     if (!isFrameComplete(i)) return null;
     return rolls.reduce((a, b) => a + b, 0);
+  }
+
+  // Earliest frame whose score is now computable but the player hasn't confirmed yet.
+  function findNextFrameNeedingScore() {
+    for (let i = 0; i < NUM_FRAMES; i++) {
+      if (!frameConfirmed[i] && computeFrameScore(i) !== null) return i;
+    }
+    return -1;
+  }
+
+  function isGameFullyDone() {
+    return currentFrameIndex() === -1 && findNextFrameNeedingScore() === -1;
   }
 
   function symbolFrame19(rolls, k) {
@@ -206,12 +225,15 @@
 
       const totalDiv = document.createElement("div");
       const score = computeFrameScore(i);
-      if (score === null) {
-        totalDiv.className = "frame-total pending";
-        totalDiv.textContent = frames[i].rolls.length > 0 ? "…" : "";
-      } else {
+      if (frameConfirmed[i]) {
         totalDiv.className = "frame-total";
         totalDiv.textContent = String(score);
+      } else if (phase === "scoring" && scoringFrameIndex === i) {
+        totalDiv.className = "frame-total pending awaiting";
+        totalDiv.textContent = "?";
+      } else {
+        totalDiv.className = "frame-total pending";
+        totalDiv.textContent = "";
       }
       frameDiv.appendChild(totalDiv);
 
@@ -223,6 +245,11 @@
     const panel = document.getElementById("actionPanel");
     panel.innerHTML = "";
     const active = currentFrameIndex();
+
+    if (phase === "scoring") {
+      renderScoringPanel(panel);
+      return;
+    }
 
     if (active === -1) {
       const p = document.createElement("p");
@@ -275,6 +302,48 @@
     panel.appendChild(fb);
   }
 
+  function renderScoringPanel(panel) {
+    const i = scoringFrameIndex;
+
+    const prompt = document.createElement("p");
+    prompt.className = "guess-prompt";
+    prompt.textContent = `Frame ${i + 1} is ready to score — what's the total?`;
+    panel.appendChild(prompt);
+
+    const entry = document.createElement("div");
+    entry.className = "score-entry";
+
+    const input = document.createElement("input");
+    input.type = "number";
+    input.inputMode = "numeric";
+    input.className = "score-input";
+    input.id = "scoreInput";
+    input.min = "0";
+    input.max = "30";
+    input.placeholder = "0";
+    input.addEventListener("keydown", e => {
+      if (e.key === "Enter") submitFrameScore();
+    });
+    entry.appendChild(input);
+
+    const submitBtn = document.createElement("button");
+    submitBtn.className = "score-submit-btn";
+    submitBtn.textContent = "Submit";
+    submitBtn.addEventListener("click", submitFrameScore);
+    entry.appendChild(submitBtn);
+
+    panel.appendChild(entry);
+
+    const fb = document.createElement("p");
+    fb.className = "guess-feedback" + (scoreFeedback ? " " + scoreFeedback.type : "");
+    fb.textContent = scoreFeedback && scoreFeedback.type === "wrong"
+      ? `Not quite — ${scoreFeedback.guess} isn't right. Check frame ${i + 1}'s rolls (and any bonus rolls) and try again.`
+      : "Add up the frame's rolls — remember strikes and spares borrow from what comes next.";
+    panel.appendChild(fb);
+
+    input.focus();
+  }
+
   function renderStatus() {
     const el = document.getElementById("statusLine");
     const active = currentFrameIndex();
@@ -291,9 +360,8 @@
     let total = 0;
     let any = false;
     for (let i = 0; i < NUM_FRAMES; i++) {
-      const s = computeFrameScore(i);
-      if (s !== null) {
-        total += s;
+      if (frameConfirmed[i]) {
+        total += computeFrameScore(i);
         any = true;
       }
     }
@@ -302,8 +370,7 @@
 
   function renderResultBanner() {
     const el = document.getElementById("resultBanner");
-    const active = currentFrameIndex();
-    if (active !== -1) {
+    if (!isGameFullyDone()) {
       el.hidden = true;
       el.className = "result-banner";
       return;
@@ -353,10 +420,10 @@
       const rollPositionInFrame = frames[active].rolls.length;
       frames[active].rolls.push(pendingActual);
       const committedValue = pendingActual;
-      phase = "ready";
       pendingActual = null;
       pendingFallenIdx = new Set();
       feedback = null;
+      advancePhaseAfterRoll();
       render();
       celebrate(active, rollPositionInFrame, committedValue);
     } else {
@@ -368,6 +435,61 @@
         setTimeout(() => freshBtn.classList.remove("wrong-flash"), 400);
       }
     }
+  }
+
+  // After a roll is committed, route into scoring mode for any frame that just
+  // became computable, otherwise back to ready-to-bowl.
+  function advancePhaseAfterRoll() {
+    const needsScoring = findNextFrameNeedingScore();
+    if (needsScoring !== -1) {
+      scoringFrameIndex = needsScoring;
+      scoreFeedback = null;
+      phase = "scoring";
+    } else {
+      phase = "ready";
+    }
+  }
+
+  function submitFrameScore() {
+    if (phase !== "scoring") return;
+    const input = document.getElementById("scoreInput");
+    const raw = input.value.trim();
+    if (raw === "") return;
+    const guess = Number(raw);
+    const actual = computeFrameScore(scoringFrameIndex);
+
+    if (guess === actual) {
+      frameConfirmed[scoringFrameIndex] = true;
+      const solvedIndex = scoringFrameIndex;
+      scoreFeedback = null;
+      const nextNeeded = findNextFrameNeedingScore();
+      if (nextNeeded !== -1) {
+        scoringFrameIndex = nextNeeded;
+      } else {
+        scoringFrameIndex = -1;
+        phase = "ready";
+      }
+      render();
+      flashFrameTotal(solvedIndex);
+    } else {
+      scoreFeedback = { type: "wrong", guess };
+      render();
+      const freshInput = document.getElementById("scoreInput");
+      if (freshInput) {
+        freshInput.value = "";
+        freshInput.classList.add("wrong-flash");
+        setTimeout(() => freshInput.classList.remove("wrong-flash"), 400);
+        freshInput.focus();
+      }
+    }
+  }
+
+  function flashFrameTotal(frameIdx) {
+    const totalEl = document.querySelector(`.frame[data-index="${frameIdx}"] .frame-total`);
+    if (!totalEl) return;
+    totalEl.classList.remove("celebrate");
+    void totalEl.offsetWidth;
+    totalEl.classList.add("celebrate");
   }
 
   function celebrate(frameIdx, rollIdx, committedValue) {
@@ -382,7 +504,16 @@
     totalEl.classList.add("celebrate");
   }
 
+  // Undoing a roll can make an already-confirmed frame's score unknowable again
+  // (its bonus rolls just disappeared) — un-confirm anything that's no longer computable.
+  function unconfirmInvalidatedFrames() {
+    for (let i = 0; i < NUM_FRAMES; i++) {
+      if (frameConfirmed[i] && computeFrameScore(i) === null) frameConfirmed[i] = false;
+    }
+  }
+
   function undo() {
+    if (phase === "scoring") return; // must solve the pending frame first
     if (phase === "guessing") {
       phase = "ready";
       pendingActual = null;
@@ -394,6 +525,7 @@
     for (let i = NUM_FRAMES - 1; i >= 0; i--) {
       if (frames[i].rolls.length > 0) {
         frames[i].rolls.pop();
+        unconfirmInvalidatedFrames();
         render();
         return;
       }
@@ -406,12 +538,21 @@
     pendingActual = null;
     pendingFallenIdx = new Set();
     feedback = null;
+    frameConfirmed = new Array(NUM_FRAMES).fill(false);
+    scoringFrameIndex = -1;
+    scoreFeedback = null;
     render();
   }
 
   function updateUndoLabel() {
     const btn = document.getElementById("undoBtn");
-    btn.textContent = phase === "guessing" ? "↺ Cancel this roll" : "↺ Undo last roll";
+    if (phase === "scoring") {
+      btn.textContent = "↺ Solve the frame to continue";
+      btn.disabled = true;
+    } else {
+      btn.textContent = phase === "guessing" ? "↺ Cancel this roll" : "↺ Undo last roll";
+      btn.disabled = false;
+    }
   }
 
   document.getElementById("undoBtn").addEventListener("click", undo);

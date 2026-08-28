@@ -415,7 +415,8 @@ table.symbols tr:last-child td { border-bottom: none; }
   cursor: pointer;
 }
 
-.action-btn:hover { color: var(--text); border-color: var(--text-muted); }
+.action-btn:hover:not(:disabled) { color: var(--text); border-color: var(--text-muted); }
+.action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .status-line {
   margin-top: 14px;
