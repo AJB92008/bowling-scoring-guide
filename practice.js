@@ -4,6 +4,18 @@
   const NUM_FRAMES = 10;
   let frames = makeFreshFrames();
 
+  // Each game is secretly pre-destined to be "perfect" (300), "near299" (299), or
+  // "normal" (ordinary weighted randomness), decided once per game.
+  const PERFECT_GAME_RATE = 0.01;
+  const NEAR_299_RATE = 0.03;
+  function rollGameArchetype() {
+    const r = Math.random();
+    if (r < PERFECT_GAME_RATE) return "perfect";
+    if (r < PERFECT_GAME_RATE + NEAR_299_RATE) return "near299";
+    return "normal";
+  }
+  let gameArchetype = rollGameArchetype();
+
   // Bowl/guess/score state machine:
   //   "ready"    — waiting for the player to bowl
   //   "guessing" — pins fell, waiting for the player to count them
@@ -407,9 +419,18 @@
     if (active === -1 || phase !== "ready") return;
     const remaining = pinsRemaining(active);
 
-    const actual = Math.random() < STRIKE_OR_SPARE_RATE
-      ? remaining                                  // strike (remaining===10) or spare
-      : Math.floor(Math.random() * remaining);      // uniform 0..remaining-1
+    let actual;
+    if (gameArchetype === "perfect") {
+      actual = remaining; // every roll clears the rack — always a strike (or spare-completing)
+    } else if (gameArchetype === "near299") {
+      // Every roll strikes except the very last ball of the game, which leaves one pin standing.
+      const isFinalRollOfGame = active === NUM_FRAMES - 1 && frames[active].rolls.length === 2;
+      actual = isFinalRollOfGame ? remaining - 1 : remaining;
+    } else {
+      actual = Math.random() < STRIKE_OR_SPARE_RATE
+        ? remaining                                  // strike (remaining===10) or spare
+        : Math.floor(Math.random() * remaining);      // uniform 0..remaining-1
+    }
     const pool = Array.from({ length: remaining }, (_, i) => i);
     for (let i = pool.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -543,6 +564,7 @@
 
   function resetGame() {
     frames = makeFreshFrames();
+    gameArchetype = rollGameArchetype();
     phase = "ready";
     pendingActual = null;
     pendingFallenIdx = new Set();
