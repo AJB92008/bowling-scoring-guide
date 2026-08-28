@@ -263,7 +263,7 @@
     if (active === -1) {
       const p = document.createElement("p");
       p.className = "bowl-hint";
-      p.textContent = "Game complete — reset to bowl again.";
+      p.textContent = "Game complete. Reset to bowl again.";
       panel.appendChild(p);
       return;
     }
@@ -306,7 +306,7 @@
     const fb = document.createElement("p");
     fb.className = "guess-feedback" + (feedback ? " " + feedback.type : "");
     fb.textContent = feedback && feedback.type === "wrong"
-      ? `Not quite — ${feedback.guess} isn't right. Recount and try again.`
+      ? `Not quite: ${feedback.guess} isn't right. Recount and try again.`
       : "Count the pins that just fell, then tap the number.";
     panel.appendChild(fb);
   }
@@ -316,7 +316,7 @@
 
     const prompt = document.createElement("p");
     prompt.className = "guess-prompt";
-    prompt.textContent = `Frame ${i + 1} is ready to score — what's the new running total?`;
+    prompt.textContent = `Frame ${i + 1} is ready to score. What's the new running total?`;
     panel.appendChild(prompt);
 
     const entry = document.createElement("div");
@@ -346,8 +346,8 @@
     const fb = document.createElement("p");
     fb.className = "guess-feedback" + (scoreFeedback ? " " + scoreFeedback.type : "");
     fb.textContent = scoreFeedback && scoreFeedback.type === "wrong"
-      ? `Not quite — ${scoreFeedback.guess} isn't right. Check frame ${i + 1}'s rolls (and any bonus rolls), work out its points, and add that to the previous running total.`
-      : "Work out this frame's points — remember strikes and spares borrow from what comes next — then add it to the running total so far.";
+      ? `Not quite: ${scoreFeedback.guess} isn't right. Check frame ${i + 1}'s rolls (and any bonus rolls), work out its points, and add that to the previous running total.`
+      : "Work out this frame's points (remember strikes and spares borrow from what comes next), then add it to the running total so far.";
     panel.appendChild(fb);
 
     input.focus();
@@ -389,10 +389,10 @@
     el.hidden = false;
     if (total === 300) {
       el.className = "result-banner perfect";
-      el.textContent = "🎉 PERFECT GAME — 300! 🎉";
+      el.textContent = "🎉 PERFECT GAME: 300! 🎉";
     } else {
       el.className = "result-banner";
-      el.textContent = `Game complete — final score: ${total}`;
+      el.textContent = `Game complete. Final score: ${total}`;
     }
   }
 

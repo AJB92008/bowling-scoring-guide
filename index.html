@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>How to Score Bowling By Hand</title>
-<meta name="description" content="A clear, visual guide to scoring a bowling game by hand — strikes, spares, the 10th frame, and a live interactive scoresheet to practice on.">
+<meta name="description" content="A clear, visual guide to scoring a bowling game by hand: strikes, spares, the 10th frame, and a live interactive scoresheet to practice on.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎳</text></svg>">
 <link rel="stylesheet" href="style.css">
 </head>
@@ -46,8 +46,8 @@
     </div>
     <p style="margin-top:24px">
       A game is broken into 10 <strong>frames</strong>. In each one, you get up to two rolls to knock down all 10 pins.
-      If you knock them all down, the frame ends early — either on the first roll (a strike) or after using both (a spare).
-      What makes bowling scoring unusual is that <strong>strikes and spares earn bonus points borrowed from your next rolls</strong> —
+      If you knock them all down, the frame ends early, either on the first roll (a strike) or after using both (a spare).
+      What makes bowling scoring unusual is that <strong>strikes and spares earn bonus points borrowed from your next rolls</strong>:
       that's the whole trick to learn.
     </p>
   </section>
@@ -83,7 +83,7 @@
 
     <div class="rule-card">
       <h3><span class="sym miss" style="width:auto;padding:2px 8px;">Open</span> Open Frame</h3>
-      <p>Neither a strike nor a spare — pins are left standing after two rolls. The frame score is just the two rolls added together. No bonus, no borrowing from the future.</p>
+      <p>Neither a strike nor a spare: pins are left standing after two rolls. The frame score is just the two rolls added together. No bonus, no borrowing from the future.</p>
       <div class="formula">frame score = roll 1 + roll 2</div>
       <p>Example: you roll a 7, then a 2. Frame score is <strong>9</strong>. Simple.</p>
       <div class="mini-frame"><div>7</div><div>2</div></div>
@@ -93,30 +93,30 @@
       <h3><span class="sym spare">/</span> Spare</h3>
       <p>You knock down all 10 pins using both rolls. The frame score is 10, <strong>plus whatever you roll on your very next ball</strong> (the first roll of the next frame) as a bonus.</p>
       <div class="formula">frame score = 10 + next 1 roll</div>
-      <p>Example: you roll 6 then 4 (a spare), and your next roll is a 5. That frame scores 10 + 5 = <strong>15</strong>. Notice the frame's score isn't final until you see that next roll — that's why scoresheets often show a spare frame as "pending" until the following ball is thrown.</p>
+      <p>Example: you roll 6 then 4 (a spare), and your next roll is a 5. That frame scores 10 + 5 = <strong>15</strong>. Notice the frame's score isn't final until you see that next roll. That's why scoresheets often show a spare frame as "pending" until the following ball is thrown.</p>
       <div class="mini-frame"><div>6</div><div>/</div></div>
     </div>
 
     <div class="rule-card">
       <h3><span class="sym strike">X</span> Strike</h3>
-      <p>You knock down all 10 pins on the first roll, so there's no second roll in this frame. The frame score is 10, <strong>plus your next two rolls</strong> — wherever they happen to fall (both could be in the next frame, or split across the next two frames if that next frame is also a strike).</p>
+      <p>You knock down all 10 pins on the first roll, so there's no second roll in this frame. The frame score is 10, <strong>plus your next two rolls</strong>, wherever they happen to fall (both could be in the next frame, or split across the next two frames if that next frame is also a strike).</p>
       <div class="formula">frame score = 10 + next 2 rolls</div>
-      <p>Example: you strike, then in the next frame roll 4 and 3. That frame scores 10 + 4 + 3 = <strong>17</strong>. If instead you strike <em>again</em> next frame, you have to wait one more frame to find out the second bonus roll — this "waiting" is exactly why a string of strikes (like in a perfect game) only gets totaled up at the very end.</p>
+      <p>Example: you strike, then in the next frame roll 4 and 3. That frame scores 10 + 4 + 3 = <strong>17</strong>. If instead you strike <em>again</em> next frame, you have to wait one more frame to find out the second bonus roll. This "waiting" is exactly why a string of strikes (like in a perfect game) only gets totaled up at the very end.</p>
       <div class="mini-frame"><div style="grid-column:1/3">X</div></div>
     </div>
   </section>
 
   <section id="tenth">
-    <h2><span class="num">04</span>The 10th Frame — the Exception</h2>
+    <h2><span class="num">04</span>The 10th Frame: the Exception</h2>
     <p class="section-lede">The last frame breaks the "borrow from the next frame" rule, because there is no next frame to borrow from. Instead, bonus rolls happen <em>inside</em> the 10th frame itself.</p>
     <div class="rule-card">
       <p><strong>If you open the frame</strong> (no strike or spare): you get your normal two rolls, and the pins don't reset. Score is just the two rolls added together, same as any open frame.</p>
       <div class="mini-frame"><div>7</div><div>2</div></div>
       <p style="margin-top:18px"><strong>If you spare</strong> (10 pins across two rolls): you get <em>one</em> extra bonus roll, with the pins reset to a fresh 10. Score is all three rolls added together.</p>
       <div class="mini-frame" style="width:76px"><div>8</div><div>/</div><div>6</div></div>
-      <p style="margin-top:18px"><strong>If you strike</strong> on the first roll: pins reset to a fresh 10, and you get two more rolls — meaning up to three strikes are possible in the 10th frame. Score is all three rolls added together.</p>
+      <p style="margin-top:18px"><strong>If you strike</strong> on the first roll: pins reset to a fresh 10, and you get two more rolls, meaning up to three strikes are possible in the 10th frame. Score is all three rolls added together.</p>
       <div class="mini-frame" style="width:76px"><div>X</div><div>X</div><div>X</div></div>
-      <p style="margin-top:18px">This is also the secret behind a <strong>perfect game (300)</strong>: twelve strikes in a row — one in each of the first nine frames (each worth 10 + the next two rolls, which are always also strikes = 30), plus three in the 10th frame (10+10+10 = 30). Twelve strikes, ten frames, 300 points.</p>
+      <p style="margin-top:18px">This is also the secret behind a <strong>perfect game (300)</strong>: twelve strikes in a row, one in each of the first nine frames (each worth 10 + the next two rolls, which are always also strikes = 30), plus three in the 10th frame (10+10+10 = 30). Twelve strikes, ten frames, 300 points.</p>
     </div>
   </section>
 
@@ -133,7 +133,7 @@
 </main>
 
 <footer>
-  <p>A quick reference for scoring ten-pin bowling by hand. Built with plain HTML, CSS &amp; JS — <a href="https://github.com/AJB92008/bowling-scoring-guide">view the source</a>.</p>
+  <p>A quick reference for scoring ten-pin bowling by hand. Built with plain HTML, CSS &amp; JS; <a href="https://github.com/AJB92008/bowling-scoring-guide">view the source</a>.</p>
 </footer>
 
 </body>
