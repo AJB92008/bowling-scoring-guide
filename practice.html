@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Practice — Bowling Scoring Guide</title>
+<meta name="description" content="Bowl a full ten-pin game and watch the score build live, frame by frame, using a tactile pin-rack input.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎳</text></svg>">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="practice.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="brand" href="index.html">🎳 Bowling Scoring Guide</a>
+    <nav class="primary-nav">
+      <a href="index.html" class="nav-link">Guide</a>
+      <a href="practice.html" class="nav-link active">Practice</a>
+    </nav>
+  </div>
+</header>
+
+<header class="hero practice-hero">
+  <div class="wrap">
+    <h1>Practice Scoring</h1>
+    <p>Knock down pins, confirm the roll, and watch the scoreboard apply the real rules live — including the "pending" frames that wait on bonus rolls.</p>
+  </div>
+</header>
+
+<main class="wrap practice-main">
+
+  <div id="resultBanner" class="result-banner" hidden></div>
+
+  <section class="board-section">
+    <div class="scoresheet-scroll">
+      <div class="scoresheet" id="scoresheet"></div>
+    </div>
+
+    <div class="game-total">
+      <span>Running total</span>
+      <span class="score" id="gameTotal">0</span>
+    </div>
+  </section>
+
+  <section class="lane-section">
+    <p class="status-line" id="statusLine"></p>
+
+    <div class="lane">
+      <div class="pin-rack" id="pinRack"></div>
+    </div>
+
+    <div class="quick-actions">
+      <button class="quick-btn strike" id="strikeBtn">Strike!</button>
+      <button class="quick-btn spare" id="spareBtn">Spare</button>
+      <button class="quick-btn gutter" id="gutterBtn">Gutter (0)</button>
+    </div>
+
+    <div class="bowl-row">
+      <div class="selected-count" id="selectedCount">Select pins, or tap Bowl for a gutter ball</div>
+      <button class="bowl-btn" id="bowlBtn">Bowl<span id="bowlValue"></span></button>
+    </div>
+
+    <div class="controls">
+      <button class="action-btn" id="undoBtn">↺ Undo last roll</button>
+      <button class="action-btn" id="resetBtn">Reset game</button>
+    </div>
+
+    <div class="legend">
+      <span><span class="dot strike"></span> Strike</span>
+      <span><span class="dot spare"></span> Spare</span>
+      <span><span class="dot open"></span> Open frame</span>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <p>New to this? Read the <a href="index.html">scoring guide</a> first. Built with plain HTML, CSS &amp; JS — <a href="https://github.com/AJB92008/bowling-scoring-guide">view the source</a>.</p>
+</footer>
+
+<script src="practice.js"></script>
+</body>
+</html>

@@ -10,16 +10,25 @@
 </head>
 <body>
 
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="brand" href="index.html">🎳 Bowling Scoring Guide</a>
+    <nav class="primary-nav">
+      <a href="index.html" class="nav-link active">Guide</a>
+      <a href="practice.html" class="nav-link">Practice</a>
+    </nav>
+  </div>
+</header>
+
 <header class="hero">
   <div class="wrap">
-    <h1>🎳 How to Score Bowling By Hand</h1>
-    <p>Ten frames, a handful of symbols, and two rules that trip everyone up at first. Here's how it actually works — plus a scoresheet you can practice on.</p>
+    <h1>How to Score Bowling By Hand</h1>
+    <p>Ten frames, a handful of symbols, and two rules that trip everyone up at first. Here's how it actually works.</p>
     <nav class="toc">
       <a href="#basics">The Basics</a>
       <a href="#symbols">Symbols</a>
       <a href="#rules">Scoring Rules</a>
       <a href="#tenth">The 10th Frame</a>
-      <a href="#practice">Try It Yourself</a>
     </nav>
   </div>
 </header>
@@ -111,31 +120,13 @@
     </div>
   </section>
 
-  <section id="practice">
-    <h2><span class="num">05</span>Try It Yourself</h2>
-    <p class="section-lede">Tap how many pins you knock down on each roll. The scoresheet fills in live, using the exact rules above — including showing a frame's score as pending until the bonus rolls it depends on have actually happened.</p>
-
-    <div class="scoresheet-scroll">
-      <div class="scoresheet" id="scoresheet"></div>
-    </div>
-
-    <div class="controls">
-      <div class="pin-row" id="pinRow"></div>
-      <button class="action-btn" id="undoBtn">Undo last roll</button>
-      <button class="action-btn" id="resetBtn">Reset game</button>
-    </div>
-
-    <p class="status-line" id="statusLine"></p>
-
-    <div class="legend">
-      <span><span class="dot strike"></span> Strike</span>
-      <span><span class="dot spare"></span> Spare</span>
-      <span><span class="dot open"></span> Open frame</span>
-    </div>
-
-    <div class="game-total">
-      <span>Running total</span>
-      <span class="score" id="gameTotal">0</span>
+  <section id="cta">
+    <div class="cta-card">
+      <div>
+        <h2 style="margin-bottom:6px">Ready to try it?</h2>
+        <p style="margin:0;color:var(--text-muted)">Bowl a full game on an interactive scoresheet and watch the score build frame by frame.</p>
+      </div>
+      <a class="cta-btn" href="practice.html">Go to Practice →</a>
     </div>
   </section>
 
@@ -145,6 +136,5 @@
   <p>A quick reference for scoring ten-pin bowling by hand. Built with plain HTML, CSS &amp; JS — <a href="https://github.com/AJB92008/bowling-scoring-guide">view the source</a>.</p>
 </footer>
 
-<script src="script.js"></script>
 </body>
 </html>

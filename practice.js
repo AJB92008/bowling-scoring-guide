@@ -3,6 +3,7 @@
 
   const NUM_FRAMES = 10;
   let frames = makeFreshFrames();
+  let selection = new Set();
 
   function makeFreshFrames() {
     return Array.from({ length: NUM_FRAMES }, () => ({ rolls: [] }));
@@ -41,7 +42,6 @@
       if (rolls.length === 0) return 10;
       return 10 - rolls[0];
     }
-    // 10th frame
     if (rolls.length === 0) return 10;
     if (rolls.length === 1) return rolls[0] === 10 ? 10 : 10 - rolls[0];
     if (rolls.length === 2) {
@@ -71,7 +71,6 @@
       return rolls[0] + rolls[1];
     }
 
-    // 10th frame — no borrowing, just sum what's been rolled once complete
     if (!isFrameComplete(i)) return null;
     return rolls.reduce((a, b) => a + b, 0);
   }
@@ -95,7 +94,6 @@
       if (rolls[0] + rolls[1] === 10) return "/";
       return disp(rolls[1]);
     }
-    // k === 2
     if (rolls.length < 3) return "";
     if (rolls[0] === 10 && rolls[1] === 10) return disp(rolls[2]);
     if (rolls[0] === 10 && rolls[1] < 10) {
@@ -112,11 +110,16 @@
     return "";
   }
 
+  // ---------- Rendering ----------
+
   function render() {
     renderScoresheet();
-    renderPinRow();
+    renderGameTotal();
     renderStatus();
-    renderTotal();
+    renderPinRack();
+    renderQuickActions();
+    renderBowlRow();
+    renderResultBanner();
   }
 
   function renderScoresheet() {
@@ -128,6 +131,7 @@
       const isLast = i === NUM_FRAMES - 1;
       const frameDiv = document.createElement("div");
       frameDiv.className = "frame" + (isLast ? " frame10" : "");
+      frameDiv.dataset.index = String(i);
 
       const idxDiv = document.createElement("div");
       idxDiv.className = "frame-index";
@@ -165,77 +169,96 @@
     }
   }
 
-  function renderPinRow() {
-    const row = document.getElementById("pinRow");
-    row.innerHTML = "";
+  function renderPinRack() {
+    const rack = document.getElementById("pinRack");
+    rack.innerHTML = "";
+    const active = currentFrameIndex();
+    const remaining = active === -1 ? 0 : pinsRemaining(active);
+    const rowSizes = [4, 3, 2, 1]; // back row to front pin
+    let i = 0;
+
+    for (const size of rowSizes) {
+      const row = document.createElement("div");
+      row.className = "pin-rack-row";
+      for (let j = 0; j < size; j++) {
+        const idx = i++;
+        const isFallen = active === -1 || idx >= remaining;
+        const isSelected = !isFallen && selection.has(idx);
+
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "pin" + (isFallen ? " fallen" : "") + (isSelected ? " selected" : "");
+        btn.disabled = isFallen;
+        btn.setAttribute("aria-label", isFallen ? "Pin already down" : isSelected ? "Pin selected, click to deselect" : "Standing pin, click to knock down");
+
+        const head = document.createElement("div");
+        head.className = "pin-head";
+        const body = document.createElement("div");
+        body.className = "pin-body";
+        btn.appendChild(head);
+        btn.appendChild(body);
+
+        if (!isFallen) {
+          btn.addEventListener("click", () => togglePin(idx));
+        }
+        row.appendChild(btn);
+      }
+      rack.appendChild(row);
+    }
+  }
+
+  function renderQuickActions() {
+    const active = currentFrameIndex();
+    const remaining = active === -1 ? null : pinsRemaining(active);
+    const strikeBtn = document.getElementById("strikeBtn");
+    const spareBtn = document.getElementById("spareBtn");
+    const gutterBtn = document.getElementById("gutterBtn");
+
+    const over = active === -1;
+    strikeBtn.disabled = over || remaining !== 10;
+    spareBtn.disabled = over || remaining === null || remaining === 10;
+    gutterBtn.disabled = over;
+
+    strikeBtn.onclick = () => addRoll(10);
+    spareBtn.onclick = () => addRoll(remaining);
+    gutterBtn.onclick = () => addRoll(0);
+  }
+
+  function renderBowlRow() {
+    const countEl = document.getElementById("selectedCount");
+    const bowlBtn = document.getElementById("bowlBtn");
+    const bowlValue = document.getElementById("bowlValue");
     const active = currentFrameIndex();
 
     if (active === -1) {
-      for (let v = 0; v <= 10; v++) {
-        row.appendChild(makePinButton(v, true));
-      }
+      countEl.textContent = "Game complete — reset to bowl again.";
+      bowlBtn.disabled = true;
+      bowlValue.textContent = "";
       return;
     }
 
-    const remaining = pinsRemaining(active);
-    for (let v = 0; v <= 10; v++) {
-      const disabled = remaining === null || v > remaining;
-      row.appendChild(makePinButton(v, disabled));
-    }
-  }
-
-  function makePinButton(v, disabled) {
-    const btn = document.createElement("button");
-    btn.className = "pin" + (v === 10 ? " strike-btn" : "");
-    btn.textContent = v === 10 ? "X" : String(v);
-    btn.disabled = disabled;
-    btn.setAttribute("aria-label", v === 10 ? "Strike — 10 pins" : `${v} pin${v === 1 ? "" : "s"}`);
-    btn.addEventListener("click", () => addRoll(v));
-    return btn;
-  }
-
-  function addRoll(v) {
-    const active = currentFrameIndex();
-    if (active === -1) return;
-    const remaining = pinsRemaining(active);
-    if (remaining === null || v > remaining) return;
-    frames[active].rolls.push(v);
-    render();
-  }
-
-  function undo() {
-    for (let i = NUM_FRAMES - 1; i >= 0; i--) {
-      if (frames[i].rolls.length > 0) {
-        frames[i].rolls.pop();
-        render();
-        return;
-      }
-    }
-  }
-
-  function resetGame() {
-    frames = makeFreshFrames();
-    render();
+    const n = selection.size;
+    countEl.textContent = n === 0
+      ? "Tap standing pins, or Bowl now for a gutter ball."
+      : `${n} pin${n === 1 ? "" : "s"} selected.`;
+    bowlValue.textContent = ` (${n})`;
+    bowlBtn.disabled = false;
+    bowlBtn.onclick = () => addRoll(n);
   }
 
   function renderStatus() {
     const el = document.getElementById("statusLine");
     const active = currentFrameIndex();
     if (active === -1) {
-      const total = flatRolls().length && computeFrameScore(9) !== null
-        ? frames.reduce((sum, _, i) => sum + (computeFrameScore(i) ?? 0), 0)
-        : null;
-      el.innerHTML = total !== null
-        ? `<strong>Game complete.</strong> Final score: <strong>${total}</strong>`
-        : "";
+      el.innerHTML = "";
       return;
     }
     const rollNum = frames[active].rolls.length + 1;
     const remaining = pinsRemaining(active);
-    el.innerHTML = `Frame <strong>${active + 1}</strong>, roll <strong>${rollNum}</strong> — ${remaining} pin${remaining === 1 ? "" : "s"} standing.`;
+    el.innerHTML = `Frame <strong>${active + 1}</strong>, roll <strong>${rollNum}</strong> — ${remaining} pin${remaining === 1 ? "" : "s"} standing`;
   }
 
-  function renderTotal() {
+  function renderGameTotal() {
     const el = document.getElementById("gameTotal");
     let total = 0;
     let any = false;
@@ -247,6 +270,77 @@
       }
     }
     el.textContent = any ? String(total) : "0";
+  }
+
+  function renderResultBanner() {
+    const el = document.getElementById("resultBanner");
+    const active = currentFrameIndex();
+    if (active !== -1) {
+      el.hidden = true;
+      el.className = "result-banner";
+      return;
+    }
+    let total = 0;
+    for (let i = 0; i < NUM_FRAMES; i++) total += computeFrameScore(i) ?? 0;
+    el.hidden = false;
+    if (total === 300) {
+      el.className = "result-banner perfect";
+      el.textContent = "🎉 PERFECT GAME — 300! 🎉";
+    } else {
+      el.className = "result-banner";
+      el.textContent = `Game complete — final score: ${total}`;
+    }
+  }
+
+  // ---------- Actions ----------
+
+  function togglePin(idx) {
+    if (selection.has(idx)) selection.delete(idx);
+    else selection.add(idx);
+    renderPinRack();
+    renderBowlRow();
+  }
+
+  function addRoll(v) {
+    const active = currentFrameIndex();
+    if (active === -1) return;
+    const remaining = pinsRemaining(active);
+    if (remaining === null || v > remaining || v < 0) return;
+
+    const rollPositionInFrame = frames[active].rolls.length;
+    frames[active].rolls.push(v);
+    selection = new Set();
+    render();
+    celebrate(active, rollPositionInFrame);
+  }
+
+  function celebrate(frameIdx, rollIdx) {
+    const rolls = frames[frameIdx].rolls;
+    const isLast = frameIdx === NUM_FRAMES - 1;
+    const sym = isLast ? symbolFrame10(rolls, rollIdx) : symbolFrame19(rolls, rollIdx);
+    if (sym !== "X" && sym !== "/") return;
+    const totalEl = document.querySelector(`.frame[data-index="${frameIdx}"] .frame-total`);
+    if (!totalEl) return;
+    totalEl.classList.remove("celebrate");
+    void totalEl.offsetWidth;
+    totalEl.classList.add("celebrate");
+  }
+
+  function undo() {
+    for (let i = NUM_FRAMES - 1; i >= 0; i--) {
+      if (frames[i].rolls.length > 0) {
+        frames[i].rolls.pop();
+        selection = new Set();
+        render();
+        return;
+      }
+    }
+  }
+
+  function resetGame() {
+    frames = makeFreshFrames();
+    selection = new Set();
+    render();
   }
 
   document.getElementById("undoBtn").addEventListener("click", undo);
