@@ -87,6 +87,16 @@
     return rolls.reduce((a, b) => a + b, 0);
   }
 
+  // Cumulative running total through frame i, as a real scoresheet displays it
+  // (each frame's box shows the running score-so-far, not just that frame's own points).
+  // Only meaningful once frame i is confirmed — confirmation always happens in order,
+  // so frames 0..i-1 are guaranteed confirmed too whenever frame i is.
+  function cumulativeThrough(i) {
+    let total = 0;
+    for (let k = 0; k <= i; k++) total += computeFrameScore(k);
+    return total;
+  }
+
   // Earliest frame whose score is now computable but the player hasn't confirmed yet.
   function findNextFrameNeedingScore() {
     for (let i = 0; i < NUM_FRAMES; i++) {
@@ -224,10 +234,9 @@
       frameDiv.appendChild(rollsRow);
 
       const totalDiv = document.createElement("div");
-      const score = computeFrameScore(i);
       if (frameConfirmed[i]) {
         totalDiv.className = "frame-total";
-        totalDiv.textContent = String(score);
+        totalDiv.textContent = String(cumulativeThrough(i)); // running total, like a real scoresheet
       } else if (phase === "scoring" && scoringFrameIndex === i) {
         totalDiv.className = "frame-total pending awaiting";
         totalDiv.textContent = "?";
@@ -307,7 +316,7 @@
 
     const prompt = document.createElement("p");
     prompt.className = "guess-prompt";
-    prompt.textContent = `Frame ${i + 1} is ready to score — what's the total?`;
+    prompt.textContent = `Frame ${i + 1} is ready to score — how many points does it earn on its own (before adding it to the running total)?`;
     panel.appendChild(prompt);
 
     const entry = document.createElement("div");
